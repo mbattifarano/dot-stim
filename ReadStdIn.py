@@ -19,7 +19,7 @@ trial_opt.add_argument('-b','--base-angle',default=0,type=int,
                         'BASE_ANGLE')
 trial_opt.add_argument('-d','--field-size',nargs=2,\
                         metavar=('width::deg','height::deg'),\
-                        default=[40,40],type=int,choices=range(0,50),\
+                        default=[40,40],type=float,choices=range(0,50),\
                         help='set trial display dimensions')
 trial_opt.add_argument('-s','--speed',type=float,default=20.0,\
                         metavar='SPEED::deg/s',help='set the target speed')
@@ -34,6 +34,8 @@ pert_opt.add_argument('-r','--repeat',type=int,default=1,\
                         'perturbation pattern')
 pert_opt.add_argument('--n-dots',type=int,default=350,\
                         help='set the number of dots')
+pert_opt.add_argument('--dot-size',metavar='DOT_SIZE::deg',type=float,\
+                        default=0.25,help='set the dot size')
 pert_opt.add_argument('--filter-cut-off',type=float,default=32,\
                         metavar='FILTER_CUT_OFF::Hz',\
                         help='set the cut off frequency of the filter')
@@ -70,7 +72,7 @@ def parse(stdin):
                     '--screen-size'
         raise ValueError(error_msg)
     args = parser.parse_args(stdin)
-    return args
+    return vars(args)
 
 if __name__ == '__main__':
     parse(sys.argv[1:])
