@@ -1,96 +1,124 @@
 from PIL import Image
-import ReadStdIn
 import sys
 import operator as op
 import math
 import random as rand
-
-PRM={}   # PARAMS is a global variable it should be READ ONLY except for 
-            # when it is constructed from command line input
+import os
+import handle_args
+import subprocess as sh
+#import numpy as np
 
 def main(arg_array):
-    get_params(arg_array)
+    global PRM
+    global conv
+
+    print "MakeTrial 1.0"
+    print "Reading arguments..."
+    PRM, conv = handle_args.get_params(arg_array)
+    print "Saving config to {}...".format(PRM['trial_dir']+'/args')
+    handle_args.arg_array_to_file(arg_array,PRM['trial_dir'])
+    print "Generating trial set..."
+    try:
+        generate_trial()
+    finally:
+        sh.check_call(['rm','-r',PRM['trial_dir']])
     return 0
 
-def get_params(arg_array):
-    global PRM # Allow get_params to modify the global variable
-    PRM=ReadStdIn.parse(arg_array)
-    PRM['px_per_cm']=map(op.div,PRM['resolution'],PRM['screen_size'])
-    PRM['cm_per_px']=map(op.div,PRM['screen_size'],PRM['resolution'])
-    PRM['deg_to_cm']=lambda deg : (PRM['dist_to_eye']*\
-                                    math.tan(math.radians(deg)))
-    PRM['cm_to_deg']=lambda cm : (math.degrees(\
-                                    math.atan2(cm,PRM['dist_to_eye'])))
-    PRM['field_limits']=deg_to_px(map(op.div,PRM['field_size'],(2.0,2.0)))
-    print PRM
+def generate_angles():
+    n_dirs=PRM['n_dirs']
+    angle=360/float(n_dirs)
+    base_angle=PRM['base_angle']
+    return [(base_angle + i*angle) % 360 for i in range(n_dirs)]
+
+def generate_dot_noise(sigma):
+    n_dots=PRM['n_dots']
+    return [rand.gauss(0,sigma) for i in range(n_dots)]
+
+def move(DOTS,direction,sigma):
+    dt=PRM['refresh_rate']
+    rho=PRM['speed']
+    unit_spd=(rho*dt,rho*dt)
+    unit_dir=(math.cos(direction),math.sin(direction))
+    step=conv.tupmap(op.mul,unit_spd,unit_dir) #::(float,float)
+    
+    # get noise
+    ns_dir=math.radians(direction+90)
+    noise_vec=[conv.tupmap(op.mul,(ns,ns),(math.cos(ns_dir),math.sin(ns_dir)))\
+                    for ns in generate_dot_noise(sigma) ]
+    # add noise
+    step_vec=[conv.tupmap(op.add,step,ns) for ns in noise_vec]
+    # update dot.pos
+    [ map(op.add,dot.pos,delta) for dot,delta in zip(DOTS,step_vec) ]
+    return DOTS #technically unnecessary since DOTS is modified globally
+
+def generate_segment(DOTS,direction,sigma,duration,path):
+    nframes=conv.float_to_int(PRM['refresh_rate']*duration*0.001)
+    FRAME=new_frame()
+    DOTS=render_dot_field(FRAME,path,DOTS)
+    for frame in range(nframes):
+        FRAME=new_frame()
+        DOTS=move(DOTS,direction,sigma)
+        render_dot_field(FRAME,path,DOTS)
     return 0
+
+def generate_trial():
+    global FRAME_NO
+    dirs=generate_angles()
+    base_path=PRM['png_dir']
+    print "Generating trialset..."
+    for angle in dirs:
+        FRAME_NO=0
+        print "Generating png files for {} degree trial...".format(angle)
+        path = '{}/{:0.2f}'.format(base_path,angle)
+        os.mkdir(path)
+        for sigma, duration in zip(PRM['pert_gain'],PRM['segment_duration']):
+            generate_segment([],angle,sigma,duration,path)
+        print "Compiling to avi..."
+        conv.avconv(path,angle)
 
 def new_frame():
-    MODE='L'
+    MODE='RGB'
     SIZE=PRM['resolution']
     COLOR='black'
-    return Image.new(MODE,SIZE,COLOR)
+    base_im=Image.new(MODE,SIZE,COLOR)
+    CENTER=get_dot(im_file='circle-red',xypos=(0,0),scale=1.2)
+    place_dot(base_im,CENTER)
+    return base_im
 
-def save_frame(image,frame_no,base_name,path_to_file):
-    filename='{}/{}/{:06d}.png'.format(path_to_file,base_name,frame_no)
+def save_frame(image,path):
+    global FRAME_NO
+    filename='{}/{:06d}.png'.format(path,FRAME_NO)
     image.save(filename)
+    FRAME_NO+=1
     return 0
 
-def generate_dot_field(frame):
+def render_dot_field(frame,path,DOTS=[]):
     paste_in_frame = lambda im : place_dot(frame,im)
     ndots=PRM['n_dots']
-    DOTS=[get_dot() for i in range(ndots)]
-    CENTER=get_dot((0,0))
-    paste_in_frame(CENTER)
+    if len(DOTS)==0:
+        DOTS=[get_dot() for i in range(ndots)]
     map(paste_in_frame,DOTS)
-    return 0
+    save_frame(frame,path)
+    return DOTS
     
 def place_dot(BG,dot):
-    BG.paste(dot,pos_mask(dot.pos))
+    BG.paste(dot,conv.pos_mask(dot))
     return 0
     
-def get_dot(xypos=None):
-    dot=Image.open('ball.png')
-    dot_size=deg_to_px(PRM['dot_size'])
-    dot=dot.resize(dot_size,'ANTIALIAS')
+
+def get_dot(im_file='circle',xypos=(),scale=1):
+    dot=Image.open('resources/{}.png'.format(im_file))
+    dot_size=conv.deg_to_px(conv.tupmap(op.mul,PRM['dot_size'],(scale,scale)))
+    dot=dot.resize(dot_size,Image.ANTIALIAS)
     if xypos:
-        pos=tuple(xypos)
+        conv.tupcheck(xypos)
+        pos=xypos
     else:
         LB=map(op.mul,(-1,-1),PRM['field_limits'])
         UB=PRM['field_limits']
-        step=2*dot_size
-        pos=tuple(map(rand.randrange,LB,UB,(step,step)))
+        pos=conv.tupmap(rand.randrange,LB,UB,dot_size)
     dot.pos=pos # create pos attribute -- IN PIXELS
     return dot
 
-def pos_mask(im):
-# specify pixel coordinates with origin at center and translate to PIL
-# coordinate system (origin top left)
-    im_center=tuple(map(op.div,im.size,(-2.0,2.0)))
-    pt=tuple(map(op.add,im.pos,im_center))
-    offset=tuple(map(op.div,PRM['resolution'],(2.0,2.0)))
-    pt_flip=map(op.mul,(1,-1),pt)
-    return map(op.add,offset,pt_flip)
-
-## conversion functions accept and return tuples (co-ordinates)
-
-def cm_to_px(cm):
-# returns cm co-ordinates (from center) in pixels
-    return tuple(map(op.mul,cm,PRM['px_per_cm']))
-    
-def px_to_cm(px):
-# returns pixel co-ordinates in cm from center of screen
-    return tuple(map(op.mul,px,PRM['cm_per_px']))
-
-def px_to_deg(px):
-    cm=px_to_cm(px)
-    deg=map(PRM['cm_to_deg'],cm)
-    return tuple(deg)
-
-def deg_to_px(deg):
-    cm=map(PRM['deg_to_cm'],deg)
-    px=cm_to_px(cm)
-    return tuple(px)
-    
 if __name__ == '__main__':
     main(sys.argv[1:])
