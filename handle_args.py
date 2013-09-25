@@ -18,6 +18,7 @@ def get_params(arg_array):
     conv=utils.Utils(PRM)
     PRM['field_limits']=conv.deg_to_px(conv.tupmap(op.div,\
                                     PRM['field_size'],(2.0,2.0)))
+    PRM['trial_save_path']='trials'
     PRM['trial_dir']=PRM['trial_save_path']+'/'+PRM['trial_name']
     PRM['png_dir']=PRM['trial_dir']+'/png'
     PRM['avi_dir']=PRM['trial_dir']+'/avi'
@@ -26,36 +27,35 @@ def get_params(arg_array):
     os.mkdir(PRM['png_dir'])
     os.mkdir(PRM['avi_dir'])
 
-    # type-correct and change pert_gain list to account for repeat
-    if type(PRM['pert_gain'])==float:
-        PRM['pert_gain']=PRM['repeat']*[PRM['pert_gain']]
-    elif type(PRM['pert_gain'])==list:
-        PRM['pert_gain']=PRM['repeat']*PRM['pert_gain']
-    else:
-        print 'pert_gain: {}'.format(type(PRM['pert_gain']))
-        raise TypeError('Something wicked happened')
-    # type-correct and account for repeats
-    if type(PRM['segment_duration'])==int:
-        print "HELLO"
-        PRM['segment_duration']=len(PRM['pert_gain'])*[PRM['segment_duration']]
-    elif type(PRM['segment_duration'])==list:
-        if len(PRM['segment_duration'])==1:
-            PRM['segment_duration']=len(PRM['pert_gain'])*\
-                                        PRM['segment_duration']
-        else: 
-            PRM['segment_duration']=PRM['repeat']*PRM['segment_duration']
-    else:
-        print 'duration: {}'.format(type(PRM['segment_duration']))
-        raise TypeError('Something wicked happened')
-        
-    # if duration list and pert_gain list are NOT the same length, something
-    # went horribly wrong (shouldn't happen)
-    if not (len(PRM['pert_gain'])==len(PRM['segment_duration'])):
-        print PRM['pert_gain']
-        print PRM['segment_duration']
-        raise TypeError('pert_gain and duration are not the same length')
+    PRM['segment_args']=['segment_duration','pert_gain','pert_mean','pert_var']
 
+    PRM['pat_len']=get_pat_len(PRM,PRM['segment_args'])
+
+    print PRM['pat_len']
+
+    map(expand_segment_args(PRM,PRM['pat_len']),PRM['segment_args'])
+    
+    print map(PRM.get,PRM['segment_args'])
     return PRM, conv
+
+def get_pat_len(PRM,segment_args):
+    return max(map(len,map(PRM.get,segment_args)))
+
+def expand_segment_args(PRM,pat_len):
+    def expand_seg_arg(opt):
+        if type(PRM[opt])==list:
+            if len(PRM[opt])==1:
+                PRM[opt]=PRM['repeat']*pat_len*PRM[opt]
+            elif len(PRM[opt])==pat_len:
+                PRM[opt]=PRM['repeat']*PRM[opt]
+            else:
+                raise TypeError('{} should either be scalar, or of length '+\
+                                'pert_gain')
+        else:
+            print '{}: {}'.format(opt,type(PRM[opt]))
+            raise TypeError('Something wicked happened')
+        return 0
+    return expand_seg_arg
 
 def dict_to_arg_str(d):
 # definitely a super sketch hack -- map return a list of `None' values

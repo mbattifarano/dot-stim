@@ -53,8 +53,8 @@ class Utils:
 
     def avconv(self,path,name):
         frate=self.PRM['refresh_rate']
-        cmd_str = 'avconv -r {} -i ./{}/%06d.png {}/{}.avi'
-        cmd=cmd_str.format(frate,path,self.PRM['trial_dir'],name)
+        cmd_str = 'avconv -r {0} -i ./{1}/%06d.png -r {0} -q 1 {2}/{3}.avi'
+        cmd=cmd_str.format(frate,path,self.PRM['avi_dir'],name)
         print cmd
         sh.check_call(cmd,shell=True)
         return 0

@@ -1,0 +1,37 @@
+Generate noisy dot field trial set. Options can either be specified on the command line or in a plain text file, or a combination of the two. Every option has a default value.
+
+Argument text files must contain a space separated list of option parameter pairs - EXACTLY as they would be written on the command line. For readability, newlines are read as spaces. To use arguments from a file specify the file name on the command line with the prefix '@'.
+
+The program automatically saves a copy of all command line inputs to trials/{trialname}/args. One can therefore re-generate a trial with the same parameter values as follows:
+
+$ python MakeTrial.py @trials/{trialname}/args -f newtrialname 
+
+Make sure to specify new trial name as the program will not overwrite an existing trial and instead will exit with errors. 
+
+To display all available command line options run 
+
+$ python MakeTrials.py -h
+
+Perturbations are specified with one or more of the '--pert-gain' (short form '-p'), '--pert-mean', and '--pert-var' options, and they divide the trial into 'segments': each segment has its own pertubration. The '--pert-gain' option takes one or more values which will correspond to the variance of the noise distribution of EACH dot in the dot field. When the noise is generated, dot noise values are drawn I.I.D. from a gaussian distribution with variance given by the value attached to '--pert-gain' and mean 0 (default). 
+
+The number of values supplied to '--pert-gain' indicates the number of segments. For example to generate a trial set with low noise followed by high noise one would use:
+
+$ python MakeTrials.py --pert-gain 5 10
+
+One can use the '--repeat' (short form '-r') option to repeat perturbation patterns. To generate a low high low high trial set one would use:
+
+$ python MakeTrials.py --pert-gain 5 10 --repeat 2
+
+Segment duration can be set using the '--segment-duration' option. If a single value is provided, then ALL segments will have that duration value. If multiple values are provided to '--segment-duration', then these values are the durations of the corresponding perturbation segments. In this case the number of values provided MUST be the same as the number of values given to '--pert-gain'. For example, the following would create a low high low high trial set where each low segment is 500 ms and each high segment is 800 ms:
+
+$ python MakeTrials.py --pert-gain 5 10 --repeat 2 --segment-duration 500 800
+
+Dot noise can be variably correlated with the '--pert_mean' and '--pert-var' options. Similar to '--segment-duration', these options take either one value to apply to all segments, or as many values as there are '--pert-gain' values. The '--pert-mean' and '--pert-var' options set the mean and variance of the distribution from which the mean of the noise distribution for each frame is drawn. For clarity, consider the following command for real numbers g, m, and v:
+
+$ python MakeTrials.py --pert-gain g --pert-mean m --pert-var v
+	
+	Each frame, a number x is drawn from the distribution N(m,v). Subsequently, each dot, i, INDEPENDENTLY draws a value, d_i, from N(x,g). This value d is the amount of pertubation the i_th dot will recieve. By defualt, g, m, and v are all zero. This configuration results in completely noiseless motion. If g>0 but m=v=0, each dot will be noisy independently of every other dot. If g=m=0 and v>0, each dot will be noisy and perfectly correlated with every other dot. That is, at each frame, the same random value will be added to every dot, resulting in random motion of the dot field as a unit. If m>0 or m<0 in any of these cases, bias will be introduced to the noise. Because noise is orthogonal to direction of motion, non-zero bias amounts to changes in overall motion direction
+
+
+
+
