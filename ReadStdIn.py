@@ -94,7 +94,7 @@ screen_opt.add_argument('--dist-to-eye',type=float,default=48.5,
                         metavar='DIST_TO_EYE::cm',
                         help='set the distance to eye in cm')
 # General
-parser.add_argument('-v','--verbose',action='store_true',help='be verbose')
+#parser.add_argument('-v','--verbose',action='store_true',help='be verbose')
 
 xor=lambda A, B : ((not A) and B) or (A and (not B)) 
 

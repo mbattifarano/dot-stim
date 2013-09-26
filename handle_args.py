@@ -31,11 +31,8 @@ def get_params(arg_array):
 
     PRM['pat_len']=get_pat_len(PRM,PRM['segment_args'])
 
-    print PRM['pat_len']
-
     map(expand_segment_args(PRM,PRM['pat_len']),PRM['segment_args'])
     
-    print map(PRM.get,PRM['segment_args'])
     return PRM, conv
 
 def get_pat_len(PRM,segment_args):
@@ -70,10 +67,9 @@ def dict_to_arg_list(d):
     return map(list,zip(d.keys(),d.values()))
 
 def arg_array_to_file(arg_array,path):
-    is_opt = lambda s : s.startswith('-')
-    put_newline = lambda b : b*'\n'
-    options = map(is_opt,arg_array) # array, options[i]=True iff arg_arry[i]
-                                    # starts with '-'
+    is_opt = re.compile('--?[a-zA-Z-]+')
+    put_newline = lambda m : bool(m)*'\n'
+    options = map(is_opt.match,arg_array) #array, True for matches
     newlines = map(put_newline, options) # array, newlines[i]='\n' iff
                                          # options[i]=True, otherwise, ''
     fstr_list=[ symb+arg for symb,arg in zip(newlines,arg_array) ]

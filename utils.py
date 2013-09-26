@@ -1,5 +1,6 @@
 import operator as op
 import subprocess as sh
+import math
 
 class Utils:
     def __init__(self,PRM):
@@ -58,4 +59,15 @@ class Utils:
         print cmd
         sh.check_call(cmd,shell=True)
         return 0
-        
+
+    def lowpass(self,x_now,y_prev=0):
+        # see the wikipedia article for low pass filters for 
+        # implementation details
+        fc = float(self.PRM['filter_cut_off'])
+        fs = float(self.PRM['refresh_rate'])
+
+        RC = 1/(2*math.pi*fc)
+        dt = 1/fs
+
+        y_now = float(x_now) * (dt/(RC+dt)) + float(y_prev) * (RC/(RC+dt))
+        return y_now
