@@ -25,10 +25,9 @@ def main(arg_array):
     RECORD['config']=deepcopy(PRM)
     del RECORD['config']['deg_to_cm']
     del RECORD['config']['cm_to_deg']
-    RECORD['trials']={}
+    RECORD['trials']=[]
     #try:
     generate_trial()
-    print RECORD['trials']['dir0_0'].keys()
     print "Saving to mat file... [{}/main.mat]".format(PRM['trial_dir'])
     sio.savemat("{}/main.mat".format(PRM['trial_dir']),RECORD,oned_as='row')
     #except:
@@ -93,28 +92,30 @@ def screen_wrap(xypos):
 def generate_segment(DOTS,direction,sigma,hm,hs,duration,path):
     global RECORD
     global FRAME_NO
-    str_dir='dir{}'.format(direction)
-    str_dir=str_dir.replace('.','_')
+    #str_dir='dir{}'.format(direction)
+    #str_dir=str_dir.replace('.','_')
     nframes=conv.float_to_int(PRM['refresh_rate']*duration*0.001)
     FRAME=new_frame()
     DOTS=render_dot_field(FRAME,path,DOTS)
-    str_frame="frame_{}".format(FRAME_NO-1)
-    RECORD['trials'][str_dir][str_frame]=[list(dot.pos) for dot in DOTS]
+    #str_frame="frame_{}".format(FRAME_NO-1)
+    RECORD['trials'][DIR_NO]['dots'].append([list(dot.pos) for dot in DOTS])
     noise_mag=[]
     for frame in range(nframes):
         FRAME=new_frame()
         DOTS,noise_mag=move(DOTS,direction,sigma,hm,hs,noise_mag)
         str_frame="frame_{}".format(FRAME_NO)
-        RECORD['trials'][str_dir][str_frame]=[list(dot.pos) for dot in DOTS]
+        RECORD['trials'][DIR_NO]['dots'].append([list(dot.pos) for dot in DOTS])
         render_dot_field(FRAME,path,DOTS)
     return DOTS
 
 def generate_trial():
     global FRAME_NO
     global RECORD
+    global DIR_NO
     dirs=generate_angles()
     base_path=PRM['png_dir']
     print "Generating trialset..."
+    DIR_NO=0
     for angle in dirs:
         FRAME_NO=0
         print "Generating png files for {} degree trial...".format(angle)
@@ -125,13 +126,14 @@ def generate_trial():
                                      'pert_gain',
                                      'pert_mean',
                                      'pert_var']))
-        str_dir='dir{}'.format(angle)
-        str_dir=str_dir.replace('.','_')
-        RECORD['trials'][str_dir]={}
+        #str_dir='dir{}'.format(angle)
+        #str_dir=str_dir.replace('.','_')
+        RECORD['trials'].append({'direction':angle,'dots':[]})
         for dur,sigma,hm,hs in seg_params:
             DOTS=generate_segment(DOTS,angle,sigma,hm,hs,dur,path)
         print "Compiling to avi..."
         conv.avconv(path,angle)
+        DIR_NO+=1
 
 def new_frame():
     MODE='RGB'
