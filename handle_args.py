@@ -27,7 +27,8 @@ def get_params(arg_array):
     os.mkdir(PRM['png_dir'])
     os.mkdir(PRM['avi_dir'])
 
-    PRM['segment_args']=['segment_duration','pert_gain','pert_mean','pert_var']
+    PRM['segment_args']=['segment_duration','pert_gain','pert_mean',
+                         'pert_var','speed','speed_var']
 
     PRM['pat_len']=get_pat_len(PRM,PRM['segment_args'])
 

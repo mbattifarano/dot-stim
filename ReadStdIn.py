@@ -28,27 +28,33 @@ parser = argparse.ArgumentParser(description=desc,
 
 # trial parameters
 trial_opt=parser.add_argument_group('Trial Parameters')
-trial_opt.add_argument('-f','--trial-name',type=str,default=print_date,
+trial_opt.add_argument('--trial-name',type=str,default=print_date,
                         metavar='trialname::str',help='set the trial name')
-trial_opt.add_argument('-n','--n-dirs',default=8,type=int,
+trial_opt.add_argument('--n-dirs',default=8,type=int,
                         choices=range(0,360),metavar='n_dirs::int',
                         help='set number of directions')
-trial_opt.add_argument('-b','--base-angle',default=0,type=int,
+trial_opt.add_argument('--base-angle',default=0,type=int,
                         choices=range(0,360),metavar='base_angle::degrees',
                         help='set the base angle; '+\
                         'full direction set is the set of N_DIRS evenly '+\
                         'distributed around the circle that includes '+\
                         'BASE_ANGLE')
-trial_opt.add_argument('-d','--field-size',nargs=2,
+trial_opt.add_argument('--field-size',nargs=2,
                         metavar=('width::deg','height::deg'),
                         default=[40,40],type=float,choices=range(0,50),
                         help='set trial display dimensions')
-trial_opt.add_argument('-s','--speed',type=float,default=20.0,
-                        metavar='speed::deg/s',help='set the target speed')
+trial_opt.add_argument('--speed',type=float,nargs='+',default=[20.0],
+                        metavar='speed::deg/s',help='set the mean target speed')
+trial_opt.add_argument('--speed-var',type=float,nargs='+',default=[0.0],
+                        metavar='sigma::deg/s',
+                        help='set the target speed variance')
+trial_opt.add_argument('--fix-dur',type=int,default=85,
+                        metavar='duration::frames',
+                        help='set the duration of pre and post fixation')
 
 # perturbation parameters
 pert_opt=parser.add_argument_group('Perturbation Parameters')
-pert_opt.add_argument('-p','--pert-gain',type=float,default=[0.0],
+pert_opt.add_argument('--pert-gain',type=float,default=[0.0],
                         metavar='sigma::deg',
                         nargs='+',help='set the perturbation variance(s); '+\
                         'determines the number of unique perturbation segments')
@@ -60,7 +66,7 @@ pert_opt.add_argument('--pert-var',type=float,default=[0.0],
                         metavar='sigma::deg',nargs='+',
                         help='set the variance of the perturbation hyper '+\
                         'distribution')
-pert_opt.add_argument('-r','--repeat',type=int,default=1,metavar='repeat::int',
+pert_opt.add_argument('--repeat',type=int,default=1,metavar='repeat::int',
                         help='set the number of times to repeat the '+\
                         'perturbation pattern')
 pert_opt.add_argument('--n-dots',type=int,default=350,metavar='n_dots::int',
@@ -72,9 +78,9 @@ pert_opt.add_argument('--filter-cut-off',type=float,default=32,
                         metavar='frequncy::Hz',
                         help='set the cut off frequency of the filter')
 pert_opt.add_argument('--segment-duration',nargs='+',default=[500],
-                        type=int,choices=range(0,9999),
-                        metavar='duration::ms',
-                        help='set segment durations; if multiple values '+\
+                        type=int,metavar='duration::frames',
+                        help='set segment durations in units of frames; '+\
+                        'if multiple values '+\
                         'are given, they are assigned in order to the '+\
                         'perturbation segments, if one value is given it '+\
                         'is assigned to all segments')

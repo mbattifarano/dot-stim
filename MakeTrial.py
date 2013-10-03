@@ -29,7 +29,7 @@ def main(arg_array):
     #try:
     generate_trial()
     print "Saving to mat file... [{}/main.mat]".format(PRM['trial_dir'])
-    sio.savemat("{}/main.mat".format(PRM['trial_dir']),RECORD,oned_as='row')
+    sio.savemat("{}/main.mat".format(PRM['trial_dir']),RECORD,oned_as='column')
     #except:
     #    print sys.exc_info()
     #    sh.check_call(['rm','-r',PRM['trial_dir']])
@@ -54,12 +54,12 @@ def generate_dot_noise(sigma,hm,hs,y_prev):
         y_prev=[0]*len(noise_mag)
     return map(conv.lowpass,noise_mag,y_prev)
 
-def move(DOTS,direction,sigma,hm,hs,y_prev):
+def move(DOTS,direction,sigma,hm,hs,y_prev,speed):
     cos=math.cos
     sin=math.sin
     tupmap=conv.tupmap
     dt=1/float(PRM['refresh_rate'])
-    rho=float(PRM['speed'])
+    rho=float(speed)
     angle=math.radians(direction)
     unit_dir=(cos(angle),sin(angle))
     # get step
@@ -89,29 +89,35 @@ def screen_wrap(xypos):
     wy = ( (y+hh) % h)-hh
     return (wx,wy)
 
-def generate_segment(DOTS,direction,sigma,hm,hs,duration,path):
+def generate_segment(DOTS,direction,sigma,hm,hs,duration,path,speed):
     global RECORD
     global FRAME_NO
-    #str_dir='dir{}'.format(direction)
-    #str_dir=str_dir.replace('.','_')
-    nframes=conv.float_to_int(PRM['refresh_rate']*duration*0.001)
+    #nframes=conv.float_to_int(PRM['refresh_rate']*duration*0.001)
+    nframes=duration
     FRAME=new_frame()
     DOTS=render_dot_field(FRAME,path,DOTS)
-    #str_frame="frame_{}".format(FRAME_NO-1)
+    noise_mag=[0]*len(DOTS)
     RECORD['trials'][DIR_NO]['dots'].append([list(dot.pos) for dot in DOTS])
-    noise_mag=[]
+    RECORD['trials'][DIR_NO]['noise'].append(noise_mag)
     for frame in range(nframes):
         FRAME=new_frame()
-        DOTS,noise_mag=move(DOTS,direction,sigma,hm,hs,noise_mag)
+        DOTS,noise_mag=move(DOTS,direction,sigma,hm,hs,noise_mag,speed)
         str_frame="frame_{}".format(FRAME_NO)
         RECORD['trials'][DIR_NO]['dots'].append([list(dot.pos) for dot in DOTS])
+        RECORD['trials'][DIR_NO]['noise'].append(noise_mag)
         render_dot_field(FRAME,path,DOTS)
+    return DOTS
+
+def generate_fixation(DOTS,path):
+    duration = PRM['fix_dur']
+    DOTS = generate_segment(DOTS,0,0,0,0,duration,path,0)
     return DOTS
 
 def generate_trial():
     global FRAME_NO
     global RECORD
     global DIR_NO
+    gauss=rand.gauss
     dirs=generate_angles()
     base_path=PRM['png_dir']
     print "Generating trialset..."
@@ -122,15 +128,14 @@ def generate_trial():
         path = '{}/{:0.2f}'.format(base_path,angle)
         os.mkdir(path)
         DOTS=[]
-        seg_params=zip(*map(PRM.get,['segment_duration',
-                                     'pert_gain',
-                                     'pert_mean',
-                                     'pert_var']))
-        #str_dir='dir{}'.format(angle)
-        #str_dir=str_dir.replace('.','_')
-        RECORD['trials'].append({'direction':angle,'dots':[]})
-        for dur,sigma,hm,hs in seg_params:
-            DOTS=generate_segment(DOTS,angle,sigma,hm,hs,dur,path)
+        seg_params=zip(*map(PRM.get,PRM['segment_args']))
+        RECORD['trials'].append({'direction':angle,'dots':[],
+                                 'noise':[], 'diode':[]})
+        DOTS=generate_fixation(DOTS,path)
+        for dur,sigma,hm,hs,spd,spd_var in seg_params:
+            speed=gauss(spd,spd_var)
+            DOTS=generate_segment(DOTS,angle,sigma,hm,hs,dur,path,speed)
+        DOTS=generate_fixation(DOTS,path)
         print "Compiling to avi..."
         conv.avconv(path,angle)
         DIR_NO+=1
@@ -143,14 +148,15 @@ def new_frame():
     CENTER=get_dot(im_file='circle-red',xypos=(0,0),scale=2)
     place_dot(base_im,CENTER)
     # add calib square based on FRAME_NO
-    SQUARE=get_calibration_square(scale=10)
-    place_dot(base_im,SQUARE)
     return base_im
 
-def get_calibration_square(scale=1):
+def get_calibration_square(scale=1,lum=-1):
+    global RECORD
     sq_pos=conv.tupmap(op.div,PRM['resolution'],[2.0,2.0])
     sq_pos=conv.tupmap(op.mul,sq_pos,[1,-1])
-    lum=(FRAME_NO % 5)/4.0
+    if lum == -1:
+        lum = ((FRAME_NO % 4)+2)/5.0
+        RECORD['trials'][DIR_NO]['diode'].append(lum)
     SQUARE=get_dot(im_file='square',xypos=sq_pos,scale=scale,brightness=lum)
     SQUARE=SQUARE.convert('RGB')
     SQUARE.pos=sq_pos
@@ -172,6 +178,12 @@ def render_dot_field(frame,path,DOTS=[]):
     if len(DOTS)==0:
         DOTS=[get_dot() for i in range(ndots)]
     map(paste_in_frame,DOTS)
+
+    sq_base=get_calibration_square(scale=10,lum=0)
+    place_dot(frame,sq_base)
+    SQUARE=get_calibration_square(scale=10)
+    place_dot(frame,SQUARE)
+    
     save_frame(frame,path)
     return DOTS
     
