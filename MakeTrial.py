@@ -8,6 +8,7 @@ import handle_args
 import subprocess as sh
 import scipy.io as sio
 from copy import deepcopy
+import matlab
 
 RECORD={} # frame-based data storage
 
@@ -28,8 +29,11 @@ def main(arg_array):
     RECORD['trials']=[]
     #try:
     generate_trial()
-    print "Saving to mat file... [{}/main.mat]".format(PRM['trial_dir'])
-    sio.savemat("{}/main.mat".format(PRM['trial_dir']),RECORD,oned_as='column')
+    mat_file_dest='{}/raw.mat'.format(PRM['trial_dir'])
+    print "Saving to mat file... [{}]".format(mat_file_dest)
+    sio.savemat(mat_file_dest,RECORD,oned_as='column')
+    print "Formatting raw data..."
+    matlab.matlab('format_raw',PRM['trial_dir'])
     #except:
     #    print sys.exc_info()
     #    sh.check_call(['rm','-r',PRM['trial_dir']])

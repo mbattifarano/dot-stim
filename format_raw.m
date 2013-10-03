@@ -1,11 +1,11 @@
-function out = format_raw(path_to_trial)
+function fdata = format_raw(path_to_trial)
 %FORMAT_RAW Summary of this function goes here
 %   Detailed explanation goes here
 
-raw = load([path_to_trial '/main.mat']);
+raw = load([path_to_trial '/raw.mat']);
 
-out.config=raw.config;
-dt=1/double(out.config.refresh_rate);
+fdata.config=raw.config;
+dt=1/double(fdata.config.refresh_rate);
 for i=1:length(raw.trials)
     trial=raw.trials{i};
     tmp.direction=trial.direction;
@@ -23,7 +23,8 @@ for i=1:length(raw.trials)
                             'time',dt*(j-1));
     end
     tmp.trial=tmp_trial;
-    out.trials(i)=tmp;
+    fdata.trials(i)=tmp;
 end
+save([path_to_trial '/main.mat'],'fdata');
 end
 
