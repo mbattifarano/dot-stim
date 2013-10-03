@@ -77,7 +77,7 @@ pert_opt.add_argument('--dot-size',metavar=('width::deg','height::deg'),
 pert_opt.add_argument('--filter-cut-off',type=float,default=32,
                         metavar='frequncy::Hz',
                         help='set the cut off frequency of the filter')
-pert_opt.add_argument('--segment-duration',nargs='+',default=[500],
+pert_opt.add_argument('--segment-duration',nargs='+',default=[85],
                         type=int,metavar='duration::frames',
                         help='set segment durations in units of frames; '+\
                         'if multiple values '+\
