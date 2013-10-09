@@ -9,35 +9,44 @@ import subprocess as sh
 import scipy.io as sio
 from copy import deepcopy
 import matlab
+import utils
 
 RECORD={} # frame-based data storage
+VERSION=2.0
 
 def main(arg_array):
     global PRM
     global conv
     global RECORD
+    global dblevel
 
-    print "MakeTrial 1.0"
-    print "Reading arguments..."
     PRM, conv = handle_args.get_params(arg_array)
-    print "Saving config... [{}/args]".format(PRM['trial_dir'])
-    handle_args.arg_array_to_file(arg_array,PRM['trial_dir'])
     
-    RECORD['config']=deepcopy(PRM)
-    del RECORD['config']['deg_to_cm']
-    del RECORD['config']['cm_to_deg']
-    RECORD['trials']=[]
-    #try:
-    generate_trial()
-    mat_file_dest='{}/raw.mat'.format(PRM['trial_dir'])
-    print "Saving to mat file... [{}]".format(mat_file_dest)
-    sio.savemat(mat_file_dest,RECORD,oned_as='column')
-    print "Formatting raw data..."
-    matlab.matlab('format_raw',PRM['trial_dir'])
-    #except:
-    #    print sys.exc_info()
-    #    sh.check_call(['rm','-r',PRM['trial_dir']])
-    print "Trial complete."
+    dblevel=utils.DebugLevels()
+    conv.stdout_write("MakeTrial {}".format(VERSION),dblevel.progress)
+
+    prnt_str="Saving config... [{}/args]".format(PRM['trial_dir'])
+    conv.stdout_write(prnt_str,dblevel.progress)
+    handle_args.arg_array_to_file(arg_array,PRM['trial_dir'])
+    RECORD = conv.init_global_record(PRM)
+
+    try:
+        generate_trial()
+        
+        mat_file_dest='{}/raw.mat'.format(PRM['trial_dir'])
+        prnt_str="Saving to mat file... [{}]".format(mat_file_dest)
+        conv.stdout_write(prnt_str,dblevel.progress)
+        sio.savemat(mat_file_dest,RECORD,oned_as='column')
+
+        conv.stdout_write("Formatting raw data...",dblevel.progress)
+        matlab.matlab('format_raw',PRM['trial_dir'],verbose=PRM['verbose'])
+        
+        conv.stdout_write("Trial complete.",dblevel.progress)
+    except KeyboardInterrupt:
+        conv.stdout_write('KeyboardInterrupt: Removing trial directory...',
+                                dblevel.essential)
+        sh.check_call(['rm','-r',PRM['trial_dir']])
+        sys.exit()
     return 0
 
 def generate_angles():
@@ -101,14 +110,14 @@ def generate_segment(DOTS,direction,sigma,hm,hs,duration,path,speed):
     FRAME=new_frame()
     DOTS=render_dot_field(FRAME,path,DOTS)
     noise_mag=[0]*len(DOTS)
-    RECORD['trials'][DIR_NO]['dots'].append([list(dot.pos) for dot in DOTS])
-    RECORD['trials'][DIR_NO]['noise'].append(noise_mag)
+    RECORD['trial']['dots'].append([list(dot.pos) for dot in DOTS])
+    RECORD['trial']['noise'].append(noise_mag)
     for frame in range(nframes):
         FRAME=new_frame()
         DOTS,noise_mag=move(DOTS,direction,sigma,hm,hs,noise_mag,speed)
         str_frame="frame_{}".format(FRAME_NO)
-        RECORD['trials'][DIR_NO]['dots'].append([list(dot.pos) for dot in DOTS])
-        RECORD['trials'][DIR_NO]['noise'].append(noise_mag)
+        RECORD['trial']['dots'].append([list(dot.pos) for dot in DOTS])
+        RECORD['trial']['noise'].append(noise_mag)
         render_dot_field(FRAME,path,DOTS)
     return DOTS
 
@@ -120,29 +129,23 @@ def generate_fixation(DOTS,path):
 def generate_trial():
     global FRAME_NO
     global RECORD
-    global DIR_NO
+    # unpack values
     gauss=rand.gauss
-    dirs=generate_angles()
-    base_path=PRM['png_dir']
-    print "Generating trialset..."
-    DIR_NO=0
-    for angle in dirs:
-        FRAME_NO=0
-        print "Generating png files for {} degree trial...".format(angle)
-        path = '{}/{:0.2f}'.format(base_path,angle)
-        os.mkdir(path)
-        DOTS=[]
-        seg_params=zip(*map(PRM.get,PRM['segment_args']))
-        RECORD['trials'].append({'direction':angle,'dots':[],
-                                 'noise':[], 'diode':[]})
-        DOTS=generate_fixation(DOTS,path)
-        for dur,sigma,hm,hs,spd,spd_var in seg_params:
-            speed=gauss(spd,spd_var)
-            DOTS=generate_segment(DOTS,angle,sigma,hm,hs,dur,path,speed)
-        DOTS=generate_fixation(DOTS,path)
-        print "Compiling to avi..."
-        conv.avconv(path,angle)
-        DIR_NO+=1
+    FRAME_NO=0
+    RECORD['trial']={'dots':[],'noise':[], 'diode':[]}
+    path=PRM['png_dir']
+    seg_params=zip(*map(PRM.get,PRM['segment_args']))
+
+    conv.stdout_write("Generating trial...",dblevel.progress)
+
+    DOTS=generate_fixation([],path)
+    for dur,sigma,hm,hs,spd,spd_var,ang,ang_var in seg_params:
+        speed=gauss(spd,spd_var)
+        angle=gauss(ang,ang_var)
+        DOTS=generate_segment(DOTS,angle,sigma,hm,hs,dur,path,speed)
+    DOTS=generate_fixation(DOTS,path)
+    conv.stdout_write("Compiling to avi...",dblevel.progress)
+    conv.avconv(path,angle)
 
 def new_frame():
     MODE='RGB'
@@ -160,7 +163,7 @@ def get_calibration_square(scale=1,lum=-1):
     sq_pos=conv.tupmap(op.mul,sq_pos,[1,-1])
     if lum == -1:
         lum = ((FRAME_NO % 4)+2)/5.0
-        RECORD['trials'][DIR_NO]['diode'].append(lum)
+        RECORD['trial']['diode'].append(lum)
     SQUARE=get_dot(im_file='square',xypos=sq_pos,scale=scale,brightness=lum)
     SQUARE=SQUARE.convert('RGB')
     SQUARE.pos=sq_pos

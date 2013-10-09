@@ -1,0 +1,44 @@
+A wrapper for MakeTrial.py designed to simplify complicated inputs to MakeTrial.py.
+
+MakeTrial2 has optional arguments that accept values, ':x' and ':+'. These function as a kind of cross product and addition function for MakeTrial.py arguments. The last is somewhat analogous to an inner product and is dicussed after an explanation of the first two. Consider the following:
+
+$ python MakeTrial2.py :x --angle 0 90 --speed 10 15 20  :+ --pert-var 10
+
+Here the arguments attached to :x are '--angle 0 90 --speed 10 15 20' and the arguments attached to :+ are --pert-var 10. The :x argument will take all inputs and return all possible combinations of those variables.
+The :+ argument will simply pass transparently to MakeTrial.py. Therefore, the above example is equivalent to:
+
+$ python MakeTrial.py --angle 0 0 0 90 90 90 --speed 10 15 20 10 15 20 --pert-var 10
+
+Since MakeTrial.py expands single values given to certain arguments, (see 'python MakeTrial.py -h' for further detail) this is also equivalent to:
+
+$ python MakeTrial.py --angle 0 0 0 90 90 90 --speed 10 15 20 10 15 20 --pert-var 10 10 10 10 10 10
+
+The order of the arguments to :x matters. The lists are generated as nested for loops according to the order in which they are given. The first argument forms the outermost loop, and the last argument forms the innermost loop. In the above example this is given by the following pseudocode:
+
+new_angle=[]
+new_speed=[]
+for i = 1:length(angle)
+	for j=1:length(speed)
+		new_angle = [new_angle angle(i)];
+		new_speed = [new_speed speed(i)];
+
+If, alternatively, the ':r' option is given, then MakeTrial2 will shuffle the lists such that all tuples of values are still there but their order is shuffled. This amounts to randomly ordering tuples.
+
+The ':l' argument takes an integer and will cause MakeTrial2 to simply make a second copy of the trial. This is really only useful if :r is also specified, since a new random order will be drawn.
+
+Lastly, a bit of syntactic sugar. For any argument that can take more than one value that is specified as an argument to ':+' can include '..' as a range operator in one of two ways:
+
+$ python MakeTrial2.py :x --angle 0 90 --speed 10 15 20  :+ --pert-var 10 .. 20
+
+and,
+
+$ python MakeTrial2.py :x --angle 0 90 --speed 10 15 20  :+ --pert-var 10 20 ..
+
+In the first, .. is given in between two values. MakeTrial2 it will linearly interpolate between those values so this is equivalent to:
+
+$ python MakeTrial.py --angle 0 0 0 90 90 90 --speed 10 15 20 10 15 20 --pert-var 10 12 14 16 18 20
+
+In the second, .. is given after any number of values. MakeTrial2 will repeat that pattern, so this is equivalent to:
+
+$ python MakeTrial.py --angle 0 0 0 90 90 90 --speed 10 15 20 10 15 20 --pert-var 10 20 10 20 10 20
+

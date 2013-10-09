@@ -1,6 +1,8 @@
 import operator as op
 import subprocess as sh
 import math
+from copy import deepcopy
+import sys
 
 class Utils:
     def __init__(self,PRM):
@@ -55,9 +57,9 @@ class Utils:
     def avconv(self,path,name):
         frate=self.PRM['refresh_rate']
         cmd_str = 'avconv -r {0} -i ./{1}/%06d.png -r {0} -q 1 {2}/{3}.avi '+\
-                    '2> {2}/avconv.{3}.log'
+                    '2> {2}/avconv.{3}.log'*(self.PRM['verbose']<3) 
         cmd=cmd_str.format(frate,path,self.PRM['avi_dir'],name)
-        print cmd
+        self.stdout_write(cmd,2)
         sh.check_call(cmd,shell=True)
         return 0
 
@@ -72,3 +74,29 @@ class Utils:
 
         y_now = float(x_now) * (dt/(RC+dt)) + float(y_prev) * (RC/(RC+dt))
         return y_now
+        
+    def init_global_record(self,params):
+        RECORD={}
+        RECORD['config']=deepcopy(params)
+
+        # Add entries:
+        #RECORD['trial']={} # no longer necessary to initialize
+
+        # Remove entries:
+        del RECORD['config']['deg_to_cm']
+        del RECORD['config']['cm_to_deg']
+
+        return RECORD
+
+    def stdout_write(self,prnt_str,debug_level):
+        prnt_str=prnt_str.strip('\n')
+        prnt_str+='\n'
+        sys.stdout.write(prnt_str*(self.PRM['verbose']>=debug_level))
+
+class DebugLevels:
+    def __init__(self):
+        self.essential=0
+        self.progress=1
+        self.progress_detail=2
+        self.command=2
+        self.detail=3

@@ -18,8 +18,7 @@ def get_params(arg_array):
     conv=utils.Utils(PRM)
     PRM['field_limits']=conv.deg_to_px(conv.tupmap(op.div,\
                                     PRM['field_size'],(2.0,2.0)))
-    PRM['trial_save_path']='trials'
-    PRM['trial_dir']=PRM['trial_save_path']+'/'+PRM['trial_name']
+    PRM['trial_dir']=PRM['save_path']+'/'+PRM['trial_name']
     PRM['png_dir']=PRM['trial_dir']+'/png'
     PRM['avi_dir']=PRM['trial_dir']+'/avi'
 
@@ -27,8 +26,9 @@ def get_params(arg_array):
     os.mkdir(PRM['png_dir'])
     os.mkdir(PRM['avi_dir'])
 
-    PRM['segment_args']=['segment_duration','pert_gain','pert_mean',
-                         'pert_var','speed','speed_var']
+    PRM['segment_args']=['segment_duration','pert_gain', 'pert_mean',
+                         'pert_var','speed','speed_var',
+                         'angle','angle_var']
 
     PRM['pat_len']=get_pat_len(PRM,PRM['segment_args'])
 

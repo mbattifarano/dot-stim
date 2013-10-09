@@ -5,12 +5,12 @@ import textwrap
 
 print_date='noisy_field-'+time.strftime('%Y:%m:%d:%H:%M:%S')
 wrap=lambda s : textwrap.fill(s,80)
-with open('MakeTrials.readme') as f:
+with open('MakeTrial.readme') as f:
     l=f.readlines()
     s=map(wrap,l)
     desc='\n'.join(s).strip('\n')
 
-# Combine RawText and ArgumentDefaults help formatters and line wrap before
+# Combine RawText and ArgumentDefaults help formatters and line wrap pre-print
 class CustomHelpFormatter(argparse.HelpFormatter):
     def _fill_text(self, text, width, indent):
         return ''.join([indent + line for line in text.splitlines(True)])
@@ -30,15 +30,21 @@ parser = argparse.ArgumentParser(description=desc,
 trial_opt=parser.add_argument_group('Trial Parameters')
 trial_opt.add_argument('--trial-name',type=str,default=print_date,
                         metavar='trialname::str',help='set the trial name')
-trial_opt.add_argument('--n-dirs',default=8,type=int,
-                        choices=range(0,360),metavar='n_dirs::int',
-                        help='set number of directions')
-trial_opt.add_argument('--base-angle',default=0,type=int,
-                        choices=range(0,360),metavar='base_angle::degrees',
-                        help='set the base angle; '+\
-                        'full direction set is the set of N_DIRS evenly '+\
-                        'distributed around the circle that includes '+\
-                        'BASE_ANGLE')
+#trial_opt.add_argument('--n-dirs',default=8,type=int,
+#                        choices=range(0,360),metavar='n_dirs::int',
+#                        help='set number of directions')
+#trial_opt.add_argument('--base-angle',default=0,type=int,
+#                        choices=range(0,360),metavar='base_angle::degrees',
+#                        help='set the base angle; '+\
+#                        'full direction set is the set of N_DIRS evenly '+\
+#                        'distributed around the circle that includes '+\
+#                        'BASE_ANGLE')
+trial_opt.add_argument('--angle',type=float,nargs='+',default=[0.0],
+                        metavar='direction::degrees',
+                        help='set the direction of each segment')
+trial_opt.add_argument('--angle-var',type=float,nargs='+',default=[0.0],
+                        metavar='sigma::degrees',
+                        help='set the target direction variance')
 trial_opt.add_argument('--field-size',nargs=2,
                         metavar=('width::deg','height::deg'),
                         default=[40,40],type=float,choices=range(0,50),
@@ -58,10 +64,6 @@ pert_opt.add_argument('--pert-gain',type=float,default=[0.0],
                         metavar='sigma::deg',
                         nargs='+',help='set the perturbation variance(s); '+\
                         'determines the number of unique perturbation segments')
-pert_opt.add_argument('--pert-mean',type=float,default=[0.0],
-                        metavar='mu::deg',nargs='+',
-                        help='set the mean of the perturbation hyper '+\
-                        'distribution')
 pert_opt.add_argument('--pert-var',type=float,default=[0.0],
                         metavar='sigma::deg',nargs='+',
                         help='set the variance of the perturbation hyper '+\
@@ -99,8 +101,21 @@ screen_opt.add_argument('--refresh-rate',type=int,default=85,
 screen_opt.add_argument('--dist-to-eye',type=float,default=48.5,
                         metavar='DIST_TO_EYE::cm',
                         help='set the distance to eye in cm')
+
+depr=parser.add_argument_group('Deprecated')
+depr.add_argument('--pert-mean',type=float,default=[0.0],
+                        metavar='mu::deg',nargs='+',
+                        help='set the mean of the perturbation hyper '+\
+                        'distribution')
+
 # General
-#parser.add_argument('-v','--verbose',action='store_true',help='be verbose')
+parser.add_argument('-v','--verbose',type=int,default=1,
+                    choices=[0,1,2,3],
+                    help='set verbosity level. 0 prints nothing whatsoever, '+\
+                        '1 prints basic progress, 2 prints commands, '+\
+                        '3 prints all avconv output')
+parser.add_argument('--save-path',type=str,default='trials',
+                    help='set the trial save path')
 
 xor=lambda A, B : ((not A) and B) or (A and (not B)) 
 

@@ -30,18 +30,25 @@ def first(string):
     except:
         return ''
 
-def matlab(fn_name,*args):
+def matlab(fn_name,*args,**kwargs):
+    try:
+        verbose=kwargs.get('verbose')
+    except KeyError:
+        verbose=3
     path_to, fn_name = parse_path(fn_name)
     if first(path_to)!='/':
         path_to='./'+path_to
         
     cmd=format_input(fn_name,*args)
     exec_str='cd '+path_to+';'+cmd+';'+'cd $OLDPWD;'
-    print exec_str
+    sys.stdout.write(exec_str*(verbose>=2))
+    
     ret_code = sh.check_call(exec_str,shell=True)
-    print ret_code
+    #sys.stdout.write(ret_code*(verbose>=2))
+
     matlab_out = sh.check_output(['tail','-n','+10',MATLAB_DUMP])
-    print matlab_out
+    sys.stdout.write(matlab_out.strip('\n')*(verbose>=3))
+    
     sh.check_call(['rm',MATLAB_DUMP])
     return ret_code
 
