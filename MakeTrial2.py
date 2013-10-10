@@ -1,6 +1,7 @@
 import MakeTrial
 import argparse
 import textwrap
+import ReadStdIn
 
 wrap=lambda s : textwrap.fill(s,80)
 with open('MakeTrial2.readme') as f:
@@ -25,12 +26,21 @@ parser=argparse.ArgumentParser( description=desc,
                                 prefix_chars=':',
                                 formatter_class=CustomHelpFormatter)
 
-parser.add_argument(':x','::cross',nargs='*',type=str)
-parser.add_argument(':+','::add',nargs='*',type=str)
-parser.add_argument(':*','::inner',nargs='*',type=str)
+parser.add_argument(':x','::cross',nargs='*',type=str,default='')
+parser.add_argument(':+','::add',nargs='*',type=str,default='')
+parser.add_argument(':*','::inner',nargs='*',type=str,default='')
 parser.add_argument(':r','::rand',action='store_true')
 parser.add_argument(':l','::loop',type=int,default=1)
 
-args=parser.parse_args()
+def main(arg_array):
+    make_cmd_opt=lambda s : '--'+s.replace('_','-')
+    meta_args=vars(parser.parse_args(arg_array))
+    cross_args = ReadStdIn.parse(meta_args['cross'].split())
+    add_args = get_parser_args(meta_args['add'].split())
+            
+    
+    print args
+    return 0
 
-print args
+if __name__=='__main__':
+    main(sys.argv[1:])
