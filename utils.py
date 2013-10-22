@@ -28,11 +28,18 @@ class Utils:
         deg=map(self.PRM['cm_to_deg'],cm)
         return tuple(deg)
 
-    def deg_to_px(self,deg):
-        self.tupcheck(deg)
+    def deg_to_px(self,deg,scalar=False):
+        if not scalar:
+            self.tupcheck(deg)
+        else:
+            deg=(deg,0)
         cm=self.tupmap(self.PRM['deg_to_cm'],deg)
         px=self.cm_to_px(cm)
-        return self.tupmap(self.float_to_int,px)
+        deg_pos=self.tupmap(self.float_to_int,px)
+        if not scalar:
+            return deg_pos
+        else:
+            return deg_pos[0]
 
     def tupcheck(self,var):
         if (type(var)==type(())) & (len(var)==2):
@@ -47,9 +54,15 @@ class Utils:
     def from_polar(self,polar):
         rho,theta = polar
 
-        x=rho*math.cos(theta)
-        y=rho*math.sin(theta)
+        x=round(rho*math.cos(theta))
+        y=round(rho*math.sin(theta))
         return (x,y)
+
+    def to_polar(self,xy):
+        x,y=xy
+        rho=(x**2 + y**2)**0.5
+        theta=math.atan2(y,x)
+        return (rho,theta)
 
     def pos_mask(self,im,center=(0.0,0.0)):
     # specify pixel coordinates with origin at center and translate to PIL
@@ -59,6 +72,7 @@ class Utils:
         offset=self.tupmap(op.div,self.PRM['resolution'],(2.0,2.0))
         pt_flip=map(op.mul,(1,-1),pt)
         cart_tuple=map(op.add,offset,pt_flip)
+        center=map(op.mul,(1,-1),center)
         PIL_tuple=self.tupmap(self.float_to_int,map(op.add,center,cart_tuple))
         return PIL_tuple
 
@@ -79,7 +93,6 @@ class Utils:
 
         RC = 1/(2*math.pi*fc)
         dt = 1/fs
-
         y_now = float(x_now) * (dt/(RC+dt)) + float(y_prev) * (RC/(RC+dt))
         return y_now
         

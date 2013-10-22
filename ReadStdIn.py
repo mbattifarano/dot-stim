@@ -74,7 +74,8 @@ pert_opt.add_argument('--pert-var',type=float,default=[0.0],
 pert_opt.add_argument('--repeat',type=int,default=1,metavar='repeat::int',
                         help='set the number of times to repeat the '+\
                         'perturbation pattern')
-pert_opt.add_argument('--n-dots',type=int,default=350,metavar='n_dots::int',
+pert_opt.add_argument('--dot-density',type=float,default=4,
+                        metavar='density::dots/deg**2',
                         help='set the number of dots')
 pert_opt.add_argument('--dot-size',metavar=('width::deg','height::deg'),
                         type=float,default=[0.25,0.25],nargs=2,

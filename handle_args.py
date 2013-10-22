@@ -16,11 +16,14 @@ def get_params(arg_array):
                                     math.atan2(cm,PRM['dist_to_eye'])))
 
     conv=utils.Utils(PRM)
-    PRM['field_limits']=conv.deg_to_px((PRM['field_size'],PRM['field_size']))
+    PRM['field_limits']=conv.deg_to_px(PRM['field_size'],scalar=True)
     PRM['field_shift']=conv.deg_to_px(tuple(PRM['field_center']))
     PRM['trial_dir']=PRM['save_path']+'/'+PRM['trial_name']
     PRM['png_dir']=PRM['trial_dir']+'/png'
     PRM['avi_dir']=PRM['trial_dir']+'/avi'
+
+    field_area=math.pi*(PRM['field_size']**2)
+    PRM['n_dots']=int(PRM['dot_density']*field_area)
 
     os.mkdir(PRM['trial_dir'])
     os.mkdir(PRM['png_dir'])

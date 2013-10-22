@@ -90,10 +90,11 @@ def move(DOTS,direction,sigma,hm,hs,y_prev,speed):
     # update dot.pos
     for dot, delta in zip(DOTS,step_vec):
         newpos=tupmap(op.add,dot.pos,delta)
-        dot.pos=screen_wrap(newpos)
+        dot.pos=field_wrap(newpos,direction)
     return DOTS, noise_mag
 
 def screen_wrap(xypos):
+    # DEPRECATED
     x,y=conv.tupmap(conv.float_to_int,xypos)
     w,h=PRM['resolution']
     hw = conv.float_to_int(w/2.0)
@@ -101,6 +102,14 @@ def screen_wrap(xypos):
     wx = ( (x+hw) % w)-hw
     wy = ( (y+hh) % h)-hh
     return (wx,wy)
+
+def field_wrap(xypos,direction):
+    rho,theta = conv.to_polar(xypos)
+    if rho > PRM['field_limits']:
+        theta = (theta - math.radians(direction) - math.pi) % (2*math.pi)
+        rho = rho - 1.0
+    return conv.from_polar((rho,theta))
+    #return xypos
 
 def generate_segment(DOTS,direction,sigma,hm,hs,duration,path,speed):
     global RECORD
@@ -180,11 +189,16 @@ def save_frame(image,path):
     return 0
 
 def render_dot_field(frame,path,DOTS=[]):
+    global RECORD
+    global PRM
     paste_in_frame = lambda im : place_dot(frame,im,mask=True,
                                             center=PRM['field_shift'])
     ndots=PRM['n_dots']
     if len(DOTS)==0:
-        DOTS=[get_dot() for i in range(ndots)]
+        for i in range(ndots):
+            DOTS.extend(get_dot(for_list=True))
+    RECORD['config']['n_visible']=len(DOTS)
+    PRM['n_dots']=len(DOTS)
     map(paste_in_frame,DOTS)
 
     sq_base=get_calibration_square(scale=10,lum=0)
@@ -203,7 +217,7 @@ def place_dot(BG,dot,mask=False,center=(0.0,0.0)):
         BG.paste(dot,pos)
     return 0
 
-def get_dot(im_file='circle',xypos=(),scale=1,brightness=1.0):
+def get_dot(im_file='circle',xypos=(),scale=1,brightness=1.0,for_list=False):
     dot=Image.open('resources/{}.png'.format(im_file))
     dot=dot.convert('RGBA')
     dot_size=conv.deg_to_px(conv.tupmap(op.mul,PRM['dot_size'],(scale,scale)))
@@ -214,13 +228,19 @@ def get_dot(im_file='circle',xypos=(),scale=1,brightness=1.0):
         conv.tupcheck(xypos)
         pos=xypos
     else:
-        #LB=map(op.mul,(-1,-1),PRM['field_limits'])
-        UB=round(sum(PRM['field_limits'])/2.0)
-        polar_pos=conv.tupmap(rand.randrange,(0,0),(UB,360),(dot_size[0],2))
-        polar_pos=conv.tupmap(op.mul,polar_pos,(1,(math.pi/180.0)))
-        pos=conv.from_polar(polar_pos)
+        radius=math.floor(PRM['field_limits'])
+        LB=map(op.mul,(-1,-1),(radius,radius))
+        UB=(radius,radius)
+        pos=conv.tupmap(rand.randrange,LB,UB,dot_size)
+
+        rho,theta = conv.to_polar(pos)
+        if rho > radius:
+            return []
     dot.pos=pos # create pos attribute -- IN PIXELS
-    return dot
+    if for_list:
+        return [dot]
+    else:
+        return dot
 
 if __name__ == '__main__':
     main(sys.argv[1:])
