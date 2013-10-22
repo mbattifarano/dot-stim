@@ -44,14 +44,22 @@ class Utils:
         #map(self.tupcheck,args[1:]) # should only be used with 2-tuples
         return tuple(map(*args))
 
-    def pos_mask(self,im):
+    def from_polar(self,polar):
+        rho,theta = polar
+
+        x=rho*math.cos(theta)
+        y=rho*math.sin(theta)
+        return (x,y)
+
+    def pos_mask(self,im,center=(0.0,0.0)):
     # specify pixel coordinates with origin at center and translate to PIL
     # coordinate system (origin top left)
         im_center=self.tupmap(op.div,im.size,(-2.0,2.0))
         pt=self.tupmap(op.add,im.pos,im_center)
         offset=self.tupmap(op.div,self.PRM['resolution'],(2.0,2.0))
         pt_flip=map(op.mul,(1,-1),pt)
-        PIL_tuple=self.tupmap(self.float_to_int,map(op.add,offset,pt_flip))
+        cart_tuple=map(op.add,offset,pt_flip)
+        PIL_tuple=self.tupmap(self.float_to_int,map(op.add,center,cart_tuple))
         return PIL_tuple
 
     def avconv(self,path,name):

@@ -45,10 +45,13 @@ trial_opt.add_argument('--angle',type=float,nargs='+',default=[0.0],
 trial_opt.add_argument('--angle-var',type=float,nargs='+',default=[0.0],
                         metavar='sigma::degrees',
                         help='set the target direction variance')
-trial_opt.add_argument('--field-size',nargs=2,
-                        metavar=('width::deg','height::deg'),
-                        default=[40,40],type=float,choices=range(0,50),
+trial_opt.add_argument('--field-size',metavar='radius::deg',
+                        default=40.0,type=float,
                         help='set trial display dimensions')
+trial_opt.add_argument('--field-center',nargs=2,
+                        metavar=('x_pos::deg','y_pos::deg'),
+                        default=[0.0,0.0],type=float,
+                        help='set trial display center')
 trial_opt.add_argument('--speed',type=float,nargs='+',default=[20.0],
                         metavar='speed::deg/s',help='set the mean target speed')
 trial_opt.add_argument('--speed-var',type=float,nargs='+',default=[0.0],

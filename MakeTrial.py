@@ -180,7 +180,8 @@ def save_frame(image,path):
     return 0
 
 def render_dot_field(frame,path,DOTS=[]):
-    paste_in_frame = lambda im : place_dot(frame,im,mask=True)
+    paste_in_frame = lambda im : place_dot(frame,im,mask=True,
+                                            center=PRM['field_shift'])
     ndots=PRM['n_dots']
     if len(DOTS)==0:
         DOTS=[get_dot() for i in range(ndots)]
@@ -194,8 +195,8 @@ def render_dot_field(frame,path,DOTS=[]):
     save_frame(frame,path)
     return DOTS
     
-def place_dot(BG,dot,mask=False):
-    pos=conv.pos_mask(dot)
+def place_dot(BG,dot,mask=False,center=(0.0,0.0)):
+    pos=conv.pos_mask(dot,center)
     if mask:
         BG.paste(dot,pos,dot)
     else:
@@ -213,9 +214,11 @@ def get_dot(im_file='circle',xypos=(),scale=1,brightness=1.0):
         conv.tupcheck(xypos)
         pos=xypos
     else:
-        LB=map(op.mul,(-1,-1),PRM['field_limits'])
-        UB=PRM['field_limits']
-        pos=conv.tupmap(rand.randrange,LB,UB,dot_size)
+        #LB=map(op.mul,(-1,-1),PRM['field_limits'])
+        UB=round(sum(PRM['field_limits'])/2.0)
+        polar_pos=conv.tupmap(rand.randrange,(0,0),(UB,360),(dot_size[0],2))
+        polar_pos=conv.tupmap(op.mul,polar_pos,(1,(math.pi/180.0)))
+        pos=conv.from_polar(polar_pos)
     dot.pos=pos # create pos attribute -- IN PIXELS
     return dot
 

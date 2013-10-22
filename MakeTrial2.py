@@ -36,8 +36,8 @@ def main(arg_array):
     make_cmd_opt=lambda s : '--'+s.replace('_','-')
     meta_args=vars(parser.parse_args(arg_array))
     cross_args = ReadStdIn.parse(meta_args['cross'].split())
-    add_args = get_parser_args(meta_args['add'].split())
-            
+    add_args = ReadStdIn.parse(meta_args['add'].split())
+     
     
     print args
     return 0
