@@ -19,6 +19,7 @@ def main(arg_array):
     global conv
     global RECORD
     global dblevel
+    global dt
 
     PRM, conv = handle_args.get_params(arg_array)
     
@@ -29,6 +30,8 @@ def main(arg_array):
     conv.stdout_write(prnt_str,dblevel.progress)
     handle_args.arg_array_to_file(arg_array,PRM['trial_dir'])
     RECORD = conv.init_global_record(PRM)
+    
+    dt=1/float(PRM['refresh_rate'])
 
     try:
         generate_trial()
@@ -47,7 +50,7 @@ def main(arg_array):
                                 dblevel.essential)
         sh.check_call(['rm','-r',PRM['trial_dir']])
         sys.exit()
-    return 0
+    return PRM['trial_dir']
 
 def generate_angles():
     n_dirs=PRM['n_dirs']
@@ -71,7 +74,6 @@ def move(DOTS,direction,sigma,hm,hs,y_prev,speed):
     cos=math.cos
     sin=math.sin
     tupmap=conv.tupmap
-    dt=1/float(PRM['refresh_rate'])
     rho=float(speed)
     angle=math.radians(direction)
     unit_dir=(cos(angle),sin(angle))
@@ -107,7 +109,7 @@ def field_wrap(xypos,direction):
     rho,theta = conv.to_polar(xypos)
     if rho > PRM['field_limits']:
         theta = (theta - math.radians(direction) - math.pi) % (2*math.pi)
-        rho = rho - 1.0
+        rho = PRM['field_limits'] - 1
     return conv.from_polar((rho,theta))
     #return xypos
 
@@ -115,13 +117,14 @@ def generate_segment(DOTS,direction,sigma,hm,hs,duration,path,speed):
     global RECORD
     global FRAME_NO
     #nframes=conv.float_to_int(PRM['refresh_rate']*duration*0.001)
+    RECORD['trial']['SegStart'].append(FRAME_NO)
     nframes=duration
     FRAME=new_frame()
     DOTS=render_dot_field(FRAME,path,DOTS)
     noise_mag=[0]*len(DOTS)
     RECORD['trial']['dots'].append([list(dot.pos) for dot in DOTS])
     RECORD['trial']['noise'].append(noise_mag)
-    for frame in range(nframes):
+    for frame in range(nframes-1):
         FRAME=new_frame()
         DOTS,noise_mag=move(DOTS,direction,sigma,hm,hs,noise_mag,speed)
         str_frame="frame_{}".format(FRAME_NO)
@@ -141,7 +144,7 @@ def generate_trial():
     # unpack values
     gauss=rand.gauss
     FRAME_NO=0
-    RECORD['trial']={'dots':[],'noise':[], 'diode':[]}
+    RECORD['trial']={'dots':[],'SegStart': [], 'noise':[], 'diode':[]}
     path=PRM['png_dir']
     seg_params=zip(*map(PRM.get,PRM['segment_args']))
 
@@ -244,3 +247,19 @@ def get_dot(im_file='circle',xypos=(),scale=1,brightness=1.0,for_list=False):
 
 if __name__ == '__main__':
     main(sys.argv[1:])
+
+def filter_test(in_data,cut_off='32',refresh_rate='100'):
+    sample_args=['--filter-cut-off',cut_off,'--refresh-rate',refresh_rate]
+    PRM, conv = handle_args.get_params(sample_args)
+    y_prev=0
+    out=[]
+    for x_now in in_data:
+        y_now = conv.lowpass(x_now,y_prev)
+        out.append(y_now)
+        y_prev=y_now
+    sio.savemat('filter_test.mat',{'sample_out':out,'sample_in':in_data,\
+                                   'sample_rate':PRM['refresh_rate'],\
+                                   'cut_off':PRM['filter_cut_off']})
+    sh.check_call(['rm','-r',PRM['trial_dir']])
+    return out 
+

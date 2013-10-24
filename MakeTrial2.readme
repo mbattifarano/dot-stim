@@ -1,6 +1,9 @@
 A wrapper for MakeTrial.py designed to simplify complicated inputs to MakeTrial.py.
 
-MakeTrial2 has optional arguments that accept values, ':x' and ':+'. These function as a kind of cross product and addition function for MakeTrial.py arguments. The last is somewhat analogous to an inner product and is dicussed after an explanation of the first two. Consider the following:
+MakeTrial2 has three optional arguments that accept MakeTrial.py arguments, ':x', ':+', and, ':l'. The first two function as a kind of cross product and addition function for MakeTrial.py arguments. The last is analogous to ':x' but for trials instead of arguments.
+
+:x (::cross) AND :+ (::add)  
+===========================
 
 $ python MakeTrial2.py :x --angle 0 90 --speed 10 15 20  :+ --pert-var 10
 
@@ -21,10 +24,31 @@ for i = 1:length(angle)
 	for j=1:length(speed)
 		new_angle = [new_angle angle(i)];
 		new_speed = [new_speed speed(i)];
+	end
+end
+
+:r (::rand)
+===========
 
 If, alternatively, the ':r' option is given, then MakeTrial2 will shuffle the lists such that all tuples of values are still there but their order is shuffled. This amounts to randomly ordering tuples.
 
-The ':l' argument takes an integer and will cause MakeTrial2 to simply make a second copy of the trial. This is really only useful if :r is also specified, since a new random order will be drawn.
+:s (::sample-size)
+==================
+
+The ':s' argument takes an integer, n, and will cause MakeTrial2 to simply make n copies of the trial. This is really only useful if :r is also specified, since a new random order will be drawn.
+
+:l (::loop)
+===========
+
+The ':l' option will construct all tuples of values of arguments given to it, in much the same way that ':x' does. The only difference is that each tuple will generate a trial instead of a segment of a trial. For example:
+
+$ python :x --angle 0 90 --speed 10 15 20 :l --field-size 5 10 20
+
+is equivalent to the following three separate calls to MakeTrial.py:
+
+$ python MakeTrial.py --angle 0 0 0 90 90 90 --speed 10 15 20 10 15 20 --field-size 5
+$ python MakeTrial.py --angle 0 0 0 90 90 90 --speed 10 15 20 10 15 20 --field-size 10
+$ python MakeTrial.py --angle 0 0 0 90 90 90 --speed 10 15 20 10 15 20 --field-size 20
 
 Lastly, a bit of syntactic sugar. For any argument that can take more than one value that is specified as an argument to ':+' can include '..' as a range operator in one of two ways:
 
@@ -34,11 +58,15 @@ and,
 
 $ python MakeTrial2.py :x --angle 0 90 --speed 10 15 20  :+ --pert-var 10 20 ..
 
-In the first, .. is given in between two values. MakeTrial2 it will linearly interpolate between those values so this is equivalent to:
+In the first, .. is given in between exactly two values. MakeTrial2 it will linearly interpolate between those values so this is equivalent to:
 
 $ python MakeTrial.py --angle 0 0 0 90 90 90 --speed 10 15 20 10 15 20 --pert-var 10 12 14 16 18 20
 
 In the second, .. is given after any number of values. MakeTrial2 will repeat that pattern, so this is equivalent to:
 
 $ python MakeTrial.py --angle 0 0 0 90 90 90 --speed 10 15 20 10 15 20 --pert-var 10 20 10 20 10 20
+
+It is important to note that .. can only handle numeric types and will type cast the expansion to the type of the first value. In the above example ':+ --pert-var 10 .. 20' will expand to a list of integers, while ':+ --pert-var 10.0 .. 20.0' will expand to a list of floating point numbers.
+
+NOTE: This script only handle exceptions that directly relate to the implementation details of MakeTrial2.py. It will pass arguments transparently (as strings) to MakeTrial.py without checking if they are correct. This is to ensure that the code will always run regardless of changes that may be made to MakeTrial.py in the future. 
 
