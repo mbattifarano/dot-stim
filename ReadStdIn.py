@@ -57,6 +57,9 @@ trial_opt.add_argument('--speed',type=float,nargs='+',default=[20.0],
 trial_opt.add_argument('--speed-var',type=float,nargs='+',default=[0.0],
                         metavar='sigma::deg/s',
                         help='set the target speed variance')
+trial_opt.add_argument('--window-speed',type=float,nargs='+',default=[0.0],
+                        metavar='speed::deg/s',
+                        help='set window speed')
 trial_opt.add_argument('--fix-dur',type=int,default=85,
                         metavar='duration::frames',
                         help='set the duration of pre and post fixation')

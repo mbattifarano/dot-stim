@@ -31,7 +31,7 @@ def get_params(arg_array):
 
     PRM['segment_args']=['segment_duration','pert_gain', 'pert_mean',
                          'pert_var','speed','speed_var',
-                         'angle','angle_var']
+                         'angle','angle_var', 'window_speed']
 
     PRM['pat_len']=get_pat_len(PRM,PRM['segment_args'])
 

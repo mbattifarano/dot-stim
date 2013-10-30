@@ -73,6 +73,7 @@ class Utils:
         pt_flip=map(op.mul,(1,-1),pt)
         cart_tuple=map(op.add,offset,pt_flip)
         center=map(op.mul,(1,-1),center)
+        #center=(5,5)
         PIL_tuple=self.tupmap(self.float_to_int,map(op.add,center,cart_tuple))
         return PIL_tuple
 
@@ -99,6 +100,8 @@ class Utils:
     def init_global_record(self,params):
         RECORD={}
         RECORD['config']=deepcopy(params)
+        RECORD['config']['SegStart']=[]
+        RECORD['trial']={'dots':[], 'noise':[], 'diode':[]}
 
         # Add entries:
         #RECORD['trial']={} # no longer necessary to initialize

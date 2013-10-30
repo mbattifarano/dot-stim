@@ -70,7 +70,7 @@ def generate_dot_noise(sigma,hm,hs,y_prev):
         y_prev=[0]*len(noise_mag)
     return map(conv.lowpass,noise_mag,y_prev)
 
-def move(DOTS,direction,sigma,hm,hs,y_prev,speed):
+def move(DOTS,direction,sigma,hm,hs,y_prev,speed,win_spd):
     cos=math.cos
     sin=math.sin
     tupmap=conv.tupmap
@@ -93,7 +93,8 @@ def move(DOTS,direction,sigma,hm,hs,y_prev,speed):
     for dot, delta in zip(DOTS,step_vec):
         newpos=tupmap(op.add,dot.pos,delta)
         dot.pos=field_wrap(newpos,direction)
-    return DOTS, noise_mag
+        d_win = tupmap(op.mul,(dt,dt),tupmap(op.mul,(win_spd,win_spd),unit_dir))
+    return DOTS, noise_mag, d_win
 
 def screen_wrap(xypos):
     # DEPRECATED
@@ -113,11 +114,11 @@ def field_wrap(xypos,direction):
     return conv.from_polar((rho,theta))
     #return xypos
 
-def generate_segment(DOTS,direction,sigma,hm,hs,duration,path,speed):
+def generate_segment(DOTS,direction,sigma,hm,hs,duration,path,speed,win_spd):
     global RECORD
     global FRAME_NO
     #nframes=conv.float_to_int(PRM['refresh_rate']*duration*0.001)
-    RECORD['trial']['SegStart'].append(FRAME_NO)
+    RECORD['config']['SegStart'].append(FRAME_NO)
     nframes=duration
     FRAME=new_frame()
     DOTS=render_dot_field(FRAME,path,DOTS)
@@ -126,16 +127,17 @@ def generate_segment(DOTS,direction,sigma,hm,hs,duration,path,speed):
     RECORD['trial']['noise'].append(noise_mag)
     for frame in range(nframes-1):
         FRAME=new_frame()
-        DOTS,noise_mag=move(DOTS,direction,sigma,hm,hs,noise_mag,speed)
+        DOTS,noise_mag,d_win=move(DOTS,direction,sigma,hm,hs,
+                                    noise_mag,speed,win_spd)
         str_frame="frame_{}".format(FRAME_NO)
         RECORD['trial']['dots'].append([list(dot.pos) for dot in DOTS])
         RECORD['trial']['noise'].append(noise_mag)
-        render_dot_field(FRAME,path,DOTS)
+        render_dot_field(FRAME,path,DOTS,d_win)
     return DOTS
 
 def generate_fixation(DOTS,path):
     duration = PRM['fix_dur']
-    DOTS = generate_segment(DOTS,0,0,0,0,duration,path,0)
+    DOTS = generate_segment(DOTS,0,0,0,0,duration,path,0,0)
     return DOTS
 
 def generate_trial():
@@ -144,17 +146,16 @@ def generate_trial():
     # unpack values
     gauss=rand.gauss
     FRAME_NO=0
-    RECORD['trial']={'dots':[],'SegStart': [], 'noise':[], 'diode':[]}
     path=PRM['png_dir']
     seg_params=zip(*map(PRM.get,PRM['segment_args']))
 
     conv.stdout_write("Generating trial...",dblevel.progress)
 
     DOTS=generate_fixation([],path)
-    for dur,sigma,hm,hs,spd,spd_var,ang,ang_var in seg_params:
+    for dur,sigma,hm,hs,spd,spd_var,ang,ang_var,win_spd in seg_params:
         speed=gauss(spd,spd_var)
         angle=gauss(ang,ang_var)
-        DOTS=generate_segment(DOTS,angle,sigma,hm,hs,dur,path,speed)
+        DOTS=generate_segment(DOTS,angle,sigma,hm,hs,dur,path,speed,win_spd)
     DOTS=generate_fixation(DOTS,path)
     conv.stdout_write("Compiling to avi...",dblevel.progress)
     conv.avconv(path,angle)
@@ -191,11 +192,16 @@ def save_frame(image,path):
     FRAME_NO+=1
     return 0
 
-def render_dot_field(frame,path,DOTS=[]):
+field_shift = (0,0)
+def render_dot_field(frame,path,DOTS=[],shift=(0,0)):
     global RECORD
     global PRM
+    global field_shift
+    field_shift=conv.tupmap(op.add,field_shift,shift)
+    center_shift = conv.tupmap(op.add,PRM['field_shift'],field_shift)
+    #center_shift = conv.tupmap(op.add,PRM['field_shift'],(-5,0))
     paste_in_frame = lambda im : place_dot(frame,im,mask=True,
-                                            center=PRM['field_shift'])
+                                            center=center_shift)
     ndots=PRM['n_dots']
     if len(DOTS)==0:
         for i in range(ndots):
