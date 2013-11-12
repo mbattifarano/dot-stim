@@ -55,6 +55,7 @@ class TrialParameters(object):
         self.avi_path   = '/'.join([self.trial_path,'avi'])
         
         self.ndots = self.ndots or int(round(math.pi*(self.field_size**2)*self.dot_density))
+        print self.dot_density, self.field_size,self.ndots
         
         os.mkdir(self.trial_path)
         os.mkdir(self.png_path)

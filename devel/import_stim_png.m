@@ -10,13 +10,15 @@ if nargin == 0;
 end
 
 for i = 1:length(trials)
+    disp(trials{i});
     png_dir = [trial_path trials{i} '/' png_path];
     png_files=get_dir_contents(png_dir);
     movie=[];
     for j = length(png_files):-1:1
-        movie(:,:,:,j)=imread([png_dir '/' png_files{i}]);
+        movie(:,:,:,j)=imread([png_dir '/' png_files{j}]);
     end
-   save(['mat/' trials{i} '.mat'],'movie','-v7.3');
+    movie = uint8(movie);
+    save(['mat/' trials{i} '.mat'],'movie','-v7.3');
 end
 end
 

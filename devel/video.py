@@ -5,6 +5,7 @@ import operator as op
 import math
 import sys
 import subprocess as sh
+import copy
 
 class Base(object):
     dfns = defaults.TrialParameters
@@ -15,6 +16,7 @@ class Base(object):
 
 class Video(Base):
     def __init__(self):
+        self.name='Video'
         super(Video,self).__init__()
         self.frames=[]
         self.targets=[]
@@ -42,7 +44,8 @@ class Video(Base):
         self.add_object(*drawables)
 
     def render(self):
-        self.frames[-1].render()
+        render_out = self.frames[-1].render()
+        return render_out
 
     def write(self):
         self.frames[-1].write()
@@ -61,6 +64,7 @@ class Video(Base):
 
 class Frame(Base):
     def __init__(self,frame_no,image=None):
+        self.name='Frame'
         super(Frame,self).__init__()
         self.objects=[]
         self.frame_no=frame_no
@@ -78,7 +82,8 @@ class Frame(Base):
         self.objects.extend(drawables)
 
     def render(self):
-        [obj.draw(self,mask=True) for obj in self.objects]
+        render_out = [obj.draw(self,mask=True) for obj in self.objects]
+        return render_out
         #self.image.show()
 
     def write(self):
@@ -89,6 +94,7 @@ class DotField(Base):
     def __init__(self,center=None,size=None,
                         ndots=None,bounds=None,
                         dot_size=None):
+        self.name='DotField'
         super(DotField,self).__init__()
         center_pt = center or self.dfns.field_center
         self.pos=Point(*center_pt)
@@ -113,7 +119,8 @@ class DotField(Base):
             self.dots.append(new_dot)
 
     def draw(self,frame,mask=False):
-        [dot.draw(frame,self.pos,mask) for dot in self.dots]
+        pos_out=[dot.draw(frame,self.pos,mask) for dot in self.dots]
+        return pos_out
 
     def move(self,dPos_list):
         size=self.dot_size
@@ -123,11 +130,14 @@ class DotField(Base):
 
     def field_wrap(self,point):
         rho, theta = point.pos.polar()
+        ret_code = False
         if rho >= self.size:
             rho = self.size-0.1
             angle = random.uniform((3/4.0)*math.pi,(5/4.0)*math.pi)
             theta = (theta - angle) % 2*math.pi
+            ret_code = True
         point.pos.set_polar_pos(rho,theta)
+        return ret_code
 
     def move_field(self,dPos):
         self.pos+=dPos
@@ -184,6 +194,7 @@ class Sprite(Base):
             args.append(paste_im)
         #print args
         frame.image.paste(*args)
+        return paste_pos
     
     def move(self,dPos):
         self.pos+=dPos
@@ -196,6 +207,7 @@ class Apeture(Sprite): # possible deprecated
 
 class CalibrationSquare(Sprite):
     def __init__(self,brightness=None,size=3,frame_no=0):
+        self.name='CalibrationSquare'
         pos=Point(*self.dfns.resolution)
         pos.scale(0.5)
         pad=2
@@ -211,12 +223,24 @@ class CalibrationSquare(Sprite):
         
 class FixationDot(Sprite):
     def __init__(self,size=None):
+        self.name='FixationDot'
         size=size or 0.25
         super(FixationDot,self).__init__(im='circle',xypos=(0.0,0.0),size=size)
         
 class Record(Base):
     def __init__(self):
         super(Record,self).__init__()
+        self.to_mat={'dfns':vars(copy.deepcopy(self.dfns))}
+        #print self.to_mat['dfns']['px_to_deg']
+        self._remove_functions()
+
+    def _remove_functions(self):
+        for key,value in self.to_mat['dfns'].items():
+            if type(value)==type(lambda x:x):
+                del self.to_mat['dfns'][key]
+
+
+    def _get_name(self,instance):return instance.name
 
 class Point(Base):
     def __init__(self,x=0,y=0):

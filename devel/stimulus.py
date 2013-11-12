@@ -3,6 +3,7 @@ import defaults
 import random as rand
 import math
 import sys
+import scipy.io as sio
 
 class Trial(object): 
 # Top level trial generator
@@ -17,12 +18,16 @@ class Trial(object):
         self.stdout_write = self.video.Base.stdout_write
         self.vid = self.video.Video() # initialize a new video object
         self.target = self.video.DotField()
+        self.record = self.video.Record()
+        self.record.to_mat['dot_pos']=[]
+        self.record.to_mat['objects']=[]
+        self.record.to_mat['dot_size_px']=self.target.dots[0].image.image.size
 
     def generate(self):
         seg_params = zip(*map(self.vid.dfns.__getattribute__,
                                 self.vid.dfns.seg_args))
         #print seg_params
-        self.generate_fixation()
+        #self.generate_fixation()
         for seg_dfn in seg_params:
             seg_dict = dict(zip(self.vid.dfns.seg_args,seg_dfn))
             #print seg_dict
@@ -31,6 +36,9 @@ class Trial(object):
             self.generate_end_fixation(show_target=True)
         else:
             self.generate_fixation()
+        mat_path=self.vid.dfns.trial_path+'/'+self.vid.dfns.trial_name
+        #print self.record.to_mat['dfns']
+        sio.savemat(mat_path,self.record.to_mat)
         self.vid.compile_avi()
 
     def generate_segment(self,seg_dict,show_target=True):
@@ -92,7 +100,9 @@ class Trial(object):
             objects_in_frame=[self.target]
         self.vid.add_frame()
         self.vid.add_object(objects_in_frame)
-        self.vid.render()
+        render_out = self.vid.render()
+        self.record.to_mat['dot_pos'].append(render_out)
+        self.record.to_mat['objects'].append(map(self.record._get_name,objects_in_frame))
         self.vid.write()
 
     def generate_fixation(self,show_target=False,dur=None):
