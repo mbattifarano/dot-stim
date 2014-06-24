@@ -1,7 +1,6 @@
 *.mat
 *.swp
 *~
-trials/
-mat/
-devel/trials/
-devel/old_trials/
+trials/*
+mat/*
+devel/
