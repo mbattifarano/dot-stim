@@ -66,6 +66,9 @@ trial_opt.add_argument('--fix-dur',type=int,default=85,
 
 # perturbation parameters
 pert_opt=parser.add_argument_group('Perturbation Parameters')
+pert_opt.add_argument('--noise-update',type=int,default=10,
+						metavar='n::frames',
+						help='set the noise update interval (frames)')
 pert_opt.add_argument('--pert-gain',type=float,default=[0.0],
                         metavar='sigma::deg',
                         nargs='+',help='set the perturbation variance(s); '+\

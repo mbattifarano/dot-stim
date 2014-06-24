@@ -39,7 +39,7 @@ class TrialParameters(object):
     verbose           = 1
     save_path         = 'trials'
 
-    noise_update      = 4
+    noise_update      = 10
 
     def __init__(self):
         self.px_per_cm = map(op.div,self.resolution,self.screen_size)
@@ -55,7 +55,7 @@ class TrialParameters(object):
         self.avi_path   = '/'.join([self.trial_path,'avi'])
         
         self.ndots = self.ndots or int(round(math.pi*(self.field_size**2)*self.dot_density))
-        print self.dot_density, self.field_size,self.ndots
+        #print self.dot_density, self.field_size,self.ndots
         
         os.mkdir(self.trial_path)
         os.mkdir(self.png_path)

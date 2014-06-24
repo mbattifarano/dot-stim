@@ -71,6 +71,7 @@ def generate_dot_noise(sigma,hm,hs,y_prev):
     return map(conv.lowpass,noise_mag,y_prev)
 
 def move(DOTS,direction,sigma,hm,hs,y_prev,speed,win_spd):
+    global FRAME_NO
     cos=math.cos
     sin=math.sin
     tupmap=conv.tupmap
@@ -81,7 +82,10 @@ def move(DOTS,direction,sigma,hm,hs,y_prev,speed,win_spd):
     step=conv.deg_to_px(tupmap(op.mul,(rho,rho),unit_dir))
     # get noise
     ns_dir=math.radians(direction+90)
-    noise_mag=generate_dot_noise(sigma,hm,hs,y_prev) 
+    if FRAME_NO % PRM['noise_update'] == 0:
+        noise_mag=generate_dot_noise(sigma,hm,hs,y_prev)
+    else:
+        noise_mag=y_prev
     noise_vec=[tupmap(op.mul,(ns,ns),(cos(ns_dir),sin(ns_dir))) \
                                             for ns in noise_mag]
     noise_vec=tupmap(conv.deg_to_px,noise_vec)
@@ -109,10 +113,13 @@ def screen_wrap(xypos):
 def field_wrap(xypos,direction):
     rho,theta = conv.to_polar(xypos)
     if rho > PRM['field_limits']:
-        theta = (theta - math.radians(direction) - math.pi) % (2*math.pi)
+        theta_rot = math.radians(direction) + math.pi + \
+                        rand.uniform(-math.pi/4.0,math.pi/4.0)
+        theta = (theta - theta_rot) % (2*math.pi)
         rho = PRM['field_limits'] - 1
-    return conv.from_polar((rho,theta))
-    #return xypos
+        x,y = conv.from_polar((rho,theta))
+        xypos = (x+rand.uniform(-10,10),y+rand.uniform(-10,10))
+    return xypos
 
 def generate_segment(DOTS,direction,sigma,hm,hs,duration,path,speed,win_spd):
     global RECORD

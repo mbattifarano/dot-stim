@@ -13,7 +13,8 @@ class Trial(object):
         parameter_namespace=defaults.TrialParameters # the class, 
                                                      # NOT an instance
         parser.parse(arg_array,namespace=parameter_namespace)
-        self.video.Base.dfns=parameter_namespace() # init the class; generates all
+        self.video.Base.dfns=parameter_namespace() # init the class; 
+												   # generates all
                                                    # dependent parameters
         self.stdout_write = self.video.Base.stdout_write
         self.vid = self.video.Video() # initialize a new video object
@@ -66,7 +67,8 @@ class Trial(object):
             self.speed_noise=self.get_speed_noise(0,seg_dict['speed_var'])
             self.angle_noise=self.get_angle_noise(0,seg_dict['angle_var'])
         
-        dPos = self.generate_target_trajectory(seg_dict['angle'],seg_dict['speed'])
+        dPos = self.generate_target_trajectory(seg_dict['angle'],\
+											   seg_dict['speed'])
         [pt.scale(dt) for pt in dPos]
         return dPos
 
@@ -88,7 +90,7 @@ class Trial(object):
         for n_spd,n_dir in zip(self.speed_noise,self.angle_noise):
             pt=self.video.Point()
             
-            pt.set_polar_pos(rho*n_spd.value,theta+math.radians(n_dir.value))
+            pt.set_polar_pos(rho+n_spd.value,theta+math.radians(n_dir.value))
             points.append(pt)
         return points
         
@@ -102,14 +104,21 @@ class Trial(object):
         self.vid.add_object(objects_in_frame)
         render_out = self.vid.render()
         self.record.to_mat['dot_pos'].append(render_out)
-        self.record.to_mat['objects'].append(map(self.record._get_name,objects_in_frame))
+        self.record.to_mat['objects'].append(map(self.record._get_name,\
+													objects_in_frame))
         self.vid.write()
 
     def generate_fixation(self,show_target=False,dur=None):
         dur=dur or self.vid.dfns.fix_dur
-        seg_dict={'segment_duration':dur,'pert_gain':0,'pert_mean':0,'pert_var':0,
-                    'speed':0,'speed_var':0,'angle':0,'angle_var':0,
-                    'window_speed':0}
+        seg_dict={'segment_duration':dur,
+				  'pert_gain':0,
+				  'pert_mean':0,
+				  'pert_var':0,
+				  'speed':0,
+				  'speed_var':0,
+				  'angle':0,
+				  'angle_var':0,
+                  'window_speed':0}
         self.generate_segment(seg_dict,show_target)
 
     def generate_end_fixation(self,show_target=True):
