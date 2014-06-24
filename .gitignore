@@ -5,4 +5,6 @@
 trials/*
 mat/*
 devel/
+filter_test/
+test_lowpass.py
 tmp.py
