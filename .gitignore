@@ -1,6 +1,8 @@
 *.mat
 *.swp
 *~
+*.pyc
 trials/*
 mat/*
 devel/
+tmp.py
