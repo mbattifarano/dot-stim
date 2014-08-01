@@ -43,13 +43,13 @@ def main(arg_array):
 
         conv.stdout_write("Formatting raw data...",dblevel.progress)
         matlab.matlab('format_raw',PRM['trial_dir'],verbose=PRM['verbose'])
-        
         conv.stdout_write("Trial complete.",dblevel.progress)
     except KeyboardInterrupt:
-        conv.stdout_write('KeyboardInterrupt: Removing trial directory...',
-                                dblevel.essential)
-        sh.check_call(['rm','-r',PRM['trial_dir']])
-        sys.exit()
+		pass
+        #conv.stdout_write('KeyboardInterrupt: Removing trial directory...',
+        #                        dblevel.essential)
+        #sh.check_call(['rm','-r',PRM['trial_dir']])
+        #sys.exit()
     return PRM['trial_dir']
 
 def generate_angles():

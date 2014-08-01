@@ -38,11 +38,9 @@ def matlab(fn_name,*args,**kwargs):
     path_to, fn_name = parse_path(fn_name)
     if first(path_to)!='/':
         path_to='./'+path_to
-        
-    cmd=format_input(fn_name,*args)
-    exec_str='cd '+path_to+';'+cmd+';'+'cd $OLDPWD;'
-    sys.stdout.write(exec_str*(verbose>=2))
-    
+	cmd=format_input(fn_name,*args)
+	exec_str='cd '+path_to+';'+cmd+';'+'cd $OLDPWD;'
+	sys.stdout.write(exec_str*(verbose>=2))
     ret_code = sh.check_call(exec_str,shell=True)
     #sys.stdout.write(ret_code*(verbose>=2))
 
